@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 from textblob import TextBlob
 from app.config import settings
+from app.services.geolocation_service import geolocation_processor as GeoProcessor
 
 
 class TextCleaner:
@@ -178,3 +179,10 @@ class CategoryClassifier:
                 best_category = category
         
         return best_category
+
+
+class GeolocationProcessor:
+    @staticmethod
+    def add_geolocation(article: dict) -> dict:
+        """Add geolocation metadata to an article."""
+        return GeoProcessor.process_article(article)

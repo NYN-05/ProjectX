@@ -1,5 +1,5 @@
 from datetime import datetime
-from app.processor import TextCleaner, DuplicateRemover, SentimentAnalyzer, KeywordExtractor, CategoryClassifier
+from app.processor import TextCleaner, DuplicateRemover, SentimentAnalyzer, KeywordExtractor, CategoryClassifier, GeolocationProcessor
 
 
 def process_article(article: dict) -> dict:
@@ -29,6 +29,8 @@ def process_article(article: dict) -> dict:
     processed["keywords"] = keywords
     processed["category"] = category
     processed["cleaned_description"] = cleaned_text
+    
+    processed = GeolocationProcessor.add_geolocation(processed)
     
     return processed
 

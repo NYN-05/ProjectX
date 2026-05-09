@@ -2,13 +2,15 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Activity, Search, TrendingUp, Globe, AlertCircle,
   RefreshCw, Database, Wifi, TrendingDown, Filter, ArrowUpCircle,
-  Loader, Clock, Tag, ExternalLink, Hash, ChevronDown, X, Zap, BarChart2
+  Loader, Clock, Tag, ExternalLink, Hash, ChevronDown, X, Zap, BarChart2, Map
 } from 'lucide-react';
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, AreaChart, Area
 } from 'recharts';
 import { newsAPI } from './services/api';
+import { useWorldNewsMap } from './hooks/useWorldNewsMap';
+import { WorldNewsMap, CountryTooltip, MapLegend } from './components/map';
 
 const SENTIMENT_COLORS = {
   positive: '#7DC97D',
@@ -40,6 +42,14 @@ function App() {
   const [hasMore, setHasMore] = useState(true);
   const [displayCount, setDisplayCount] = useState(8);
   const [activeView, setActiveView] = useState('feed');
+  const {
+    mapData,
+    loading: mapLoading,
+    error: mapError,
+    selectedCountry,
+    setSelectedCountry,
+    fetchMapData
+  } = useWorldNewsMap();
   const [stats, setStats] = useState({
     totalArticles: 0,
     categories: {},
@@ -187,6 +197,13 @@ function App() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setActiveView(activeView === 'feed' ? 'map' : 'feed')}
+                className="btn-ghost flex items-center gap-2"
+              >
+                <Map size={13} />
+                {activeView === 'feed' ? 'Map' : 'Feed'}
+              </button>
               <button onClick={handleRefresh} disabled={loading} className="btn-ghost flex items-center gap-2">
                 <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
                 Refresh
@@ -232,7 +249,40 @@ function App() {
         </div>
       </div>
 
+      {/* Map View */}
+      {activeView === 'map' && (
+        <div className="max-w-7xl mx-auto px-6 pb-6">
+          <div className="card" style={{ height: 500, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 16, left: 16, zIndex: 10 }}>
+              <h2 style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 18, color: 'var(--text-primary)', letterSpacing: '0.15em' }}>
+                GLOBAL NEWS MAP
+              </h2>
+              <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace', marginTop: 4 }}>
+                Real-time geographic distribution
+              </p>
+            </div>
+            <WorldNewsMap 
+              mapData={mapData}
+              onCountrySelect={setSelectedCountry}
+              selectedCountry={selectedCountry}
+              loading={mapLoading}
+            />
+            <MapLegend 
+              totalArticles={mapData?.total_articles}
+              totalCountries={mapData?.total_countries}
+            />
+            {selectedCountry && mapData && (
+              <CountryTooltip 
+                country={mapData.countries?.find(c => c.country_code === selectedCountry)}
+                onClose={() => setSelectedCountry(null)}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
+      {activeView === 'feed' && (
       <div className="max-w-7xl mx-auto px-6 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -407,6 +457,7 @@ function App() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

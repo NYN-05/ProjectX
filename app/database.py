@@ -47,6 +47,8 @@ class DatabaseHandler:
                 self.collection.create_index("url", unique=True, background=True)
                 self.collection.create_index("category", background=True)
                 self.collection.create_index("publishedAt", background=True)
+                self.collection.create_index("country_code", background=True)
+                self.collection.create_index([("country_code", 1), ("publishedAt", -1)], background=True)
                 logger.info("Database indexes created")
             except Exception as e:
                 logger.debug(f"Index creation warning: {e}")
@@ -381,3 +383,35 @@ class DatabaseHandler:
             except Exception as e:
                 logger.error(f"Error closing connection: {e}")
         self._connected = False
+
+    def get_articles_by_country(self, country_code: str = None, limit: int = 100) -> list:
+        """Get articles filtered by country code."""
+        query = {"country_code": country_code} if country_code else {}
+        
+        articles = []
+        if self.collection is not None and self.is_connected():
+            try:
+                cursor = self.collection.find(query).sort("publishedAt", -1).limit(limit)
+                for doc in cursor:
+                    doc["_id"] = str(doc["_id"])
+                    articles.append(doc)
+            except Exception as e:
+                logger.error(f"MongoDB fetch error: {e}")
+                articles = self._read_json()
+        else:
+            articles = self._read_json()
+            if country_code:
+                articles = [a for a in articles if a.get("country_code") == country_code]
+        
+        return articles[:limit]
+
+    def get_country_distribution(self) -> dict:
+        """Get article count by country."""
+        articles = self.get_all_articles(limit=1000)
+        
+        country_counts = {}
+        for article in articles:
+            code = article.get("country_code", "US")
+            country_counts[code] = country_counts.get(code, 0) + 1
+        
+        return country_counts

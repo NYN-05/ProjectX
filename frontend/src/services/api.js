@@ -120,12 +120,23 @@ export const newsAPI = {
     return api.get('/rss/status');
   },
 
-  /**
-   * Get health check status
-   */
-  getHealth: () => {
-    return api.get('/health');
-  },
+/**
+    * Get health check status
+    */
+   getHealth: () => {
+     return api.get('/health');
+   },
+
+   /**
+    * Get world map data with country distribution
+    * @param {number} limit - Number of articles (default: 200)
+    * @param {string} category - Optional category filter
+    */
+   getMapData: (limit = 200, category = null) => {
+     const params = new URLSearchParams({ limit });
+     if (category) params.append('category', category);
+     return api.get(`/news/map?${params.toString()}`);
+   },
 
   /**
    * Batch fetch multiple pages

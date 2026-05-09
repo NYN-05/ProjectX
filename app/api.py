@@ -28,6 +28,10 @@ class ArticleResponse(BaseModel):
     sentiment: Optional[dict] = None
     keywords: Optional[List[str]] = None
     category: Optional[str] = None
+    country: Optional[str] = None
+    country_code: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class SearchResponse(BaseModel):
     query: str
@@ -316,3 +320,66 @@ async def rss_status():
         "total_feeds": len(feeds_status),
         "data": feeds_status
     }
+
+
+@router.get("/news/map")
+@limiter.limit("30/minute")
+async def get_news_map(request: Request,
+    limit: int = Query(default=200, ge=1, le=500, description="Number of articles"),
+    category: Optional[str] = Query(default=None, description="Category filter")
+):
+    """
+    Get aggregated news data for world map visualization.
+    Returns country counts, coordinates, and recent articles by region.
+    """
+    try:
+        articles = db.get_all_articles(limit=limit, category=category)
+        
+        country_data = {}
+        articles_by_country = {}
+        
+        for article in articles:
+            code = article.get("country_code", "US")
+            if code not in country_data:
+                country_data[code] = {
+                    "country": article.get("country", "United States"),
+                    "country_code": code,
+                    "latitude": article.get("latitude", 37.0902),
+                    "longitude": article.get("longitude", -95.7129),
+                    "count": 0,
+                    "categories": {},
+                    "articles": []
+                }
+                articles_by_country[code] = []
+            
+            country_data[code]["count"] += 1
+            
+            cat = article.get("category", "general")
+            country_data[code]["categories"][cat] = country_data[code]["categories"].get(cat, 0) + 1
+            
+            if len(country_data[code]["articles"]) < 3:
+                country_data[code]["articles"].append({
+                    "title": article.get("title", "")[:100],
+                    "url": article.get("url", ""),
+                    "category": cat,
+                    "publishedAt": article.get("publishedAt", "")
+                })
+        
+        countries = list(country_data.values())
+        countries.sort(key=lambda x: x["count"], reverse=True)
+        
+        total_articles = sum(c["count"] for c in countries)
+        
+        return {
+            "success": True,
+            "data": {
+                "total_articles": total_articles,
+                "total_countries": len(countries),
+                "countries": countries[:50],
+                "heatmap": [{"code": c["country_code"], "count": c["count"], "lat": c["latitude"], "lng": c["longitude"]} for c in countries]
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Map data error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch map data: {str(e)}")
