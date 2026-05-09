@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+requests
+textblob
+schedule
+pymongo
+python-dotenv
+feedparser
+slowapi

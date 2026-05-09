@@ -1,0 +1,307 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Fraunces:ital,wght@0,300;0,600;0,900;1,300&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-base: #0D0D0D;
+    --bg-surface: #1A1714;
+    --bg-elevated: #242018;
+    --border: #3D3A36;
+    --border-light: #524D46;
+    --text-primary: #F5F0E8;
+    --text-secondary: #A89F8F;
+    --text-muted: #6B6459;
+    --accent: #E8B84A;
+    --accent-hover: #F0C860;
+    --accent-dim: rgba(232, 184, 74, 0.12);
+    --danger: #E85D4C;
+    --danger-dim: rgba(232, 93, 76, 0.12);
+    --positive: #7DC97D;
+    --positive-dim: rgba(125, 201, 125, 0.12);
+    --neutral: #8B8B8B;
+    --neutral-dim: rgba(139, 139, 139, 0.12);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'DM Mono', 'Fira Code', monospace;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--bg-base);
+  }
+}
+
+@layer components {
+  .card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    transition: border-color 0.3s ease, background 0.3s ease;
+  }
+
+  .card:hover {
+    border-color: var(--border-light);
+    background: var(--bg-elevated);
+  }
+
+  .accent-border-left {
+    border-left: 3px solid var(--accent);
+  }
+
+  .sentiment-positive { border-left-color: var(--positive); }
+  .sentiment-negative { border-left-color: var(--danger); }
+  .sentiment-neutral { border-left-color: var(--neutral); }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-radius: 2px;
+    border: 1px solid;
+  }
+
+  .badge-positive {
+    color: var(--positive);
+    background: var(--positive-dim);
+    border-color: rgba(125, 201, 125, 0.3);
+  }
+
+  .badge-negative {
+    color: var(--danger);
+    background: var(--danger-dim);
+    border-color: rgba(232, 93, 76, 0.3);
+  }
+
+  .badge-neutral {
+    color: var(--neutral);
+    background: var(--neutral-dim);
+    border-color: rgba(139, 139, 139, 0.3);
+  }
+
+  .badge-category {
+    color: var(--accent);
+    background: var(--accent-dim);
+    border-color: rgba(232, 184, 74, 0.3);
+  }
+
+  .headline {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    transition: color 0.2s ease;
+  }
+
+  .headline:hover {
+    color: var(--accent);
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .keyword-tag {
+    font-size: 9px;
+    padding: 2px 8px;
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: all 0.2s ease;
+  }
+
+  .keyword-tag:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .stat-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 40px;
+    line-height: 1;
+    color: var(--text-primary);
+    letter-spacing: 0.02em;
+  }
+
+  .stat-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 14px 20px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+
+  .search-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .search-input:focus {
+    border-color: var(--accent);
+    background: var(--bg-elevated);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+
+  .btn-primary {
+    padding: 10px 24px;
+    background: var(--accent);
+    color: var(--bg-base);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  ::-webkit-scrollbar {
+    width: 3px;
+    height: 3px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--bg-base);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-light);
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+}
+
+/* Entrance animations */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-fade-slide-up {
+  animation: fadeSlideUp 0.5s ease forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease forwards;
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.article-enter {
+  opacity: 0;
+  animation: fadeSlideUp 0.4s ease forwards;
+}
