@@ -84,7 +84,6 @@ async def health_check():
 @router.get("/news")
 @limiter.limit("60/minute")
 async def get_news(request: Request,
-    country: str = Query(default="us", min_length=2, max_length=2, description="Country code"),
     limit: int = Query(default=50, ge=1, le=100, description="Number of articles"),
     skip: int = Query(default=0, ge=0, description="Number of articles to skip"),
     category: Optional[str] = Query(default=None, description="Category filter"),
@@ -93,7 +92,7 @@ async def get_news(request: Request,
 ):
     """
     Get latest news articles with filtering and pagination.
-    Returns articles from MongoDB or fetches from NewsAPI if DB is empty.
+    Returns articles from MongoDB or fetches from RSS feeds if DB is empty.
     """
     try:
         articles = db.get_all_articles(
@@ -105,9 +104,9 @@ async def get_news(request: Request,
         )
 
         if not articles:
-            # If DB is empty, fetch fresh data
+            # If DB is empty, fetch fresh data from RSS
             fetcher = NewsFetcher()
-            articles = fetcher.get_top_headlines(country=country)
+            articles = fetcher.fetch_rss_feeds()
             if articles:
                 processed = process_articles_batch(articles)
                 db.store_articles_batch(processed)
@@ -268,17 +267,16 @@ async def get_stats(request: Request):
 @limiter.limit("5/minute")
 async def fetch_news_now(request: Request):
     """
-    Trigger a one-time news fetch from NewsAPI and RSS feeds.
+    Trigger a one-time news fetch from RSS feeds only.
     Returns immediately with fetch status.
     """
     try:
         fetcher = NewsFetcher()
 
-        # Fetch top headlines
-        articles = fetcher.get_top_headlines(country="us", language="en")
+        # Fetch articles from RSS feeds only
         rss_articles = fetcher.fetch_rss_feeds()
 
-        all_articles = articles + rss_articles
+        all_articles = rss_articles
 
         if all_articles:
             processed = process_articles_batch(all_articles)

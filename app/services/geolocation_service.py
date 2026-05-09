@@ -263,7 +263,14 @@ class GeolocationProcessor:
     
     def process_article(self, article: dict) -> dict:
         """Add geolocation data to an article."""
-        source_name = article.get("source", {}).get("name", "")
+        source = article.get("source")
+        if isinstance(source, dict):
+            source_name = source.get("name", "")
+        elif isinstance(source, str):
+            source_name = source
+        else:
+            source_name = ""
+        
         title = article.get("title", "")
         description = article.get("description", "")
         

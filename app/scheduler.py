@@ -21,14 +21,11 @@ def fetch_and_store_news():
         if not db.connect():
             print("Database not connected. Fetching will be stored in JSON only.")
         
-        # Fetch top headlines from NewsAPI
-        articles = fetcher.get_top_headlines(country="us", language="en")
-        
-        # Fetch articles from RSS feeds
+        # Fetch articles from RSS feeds only
         rss_articles = fetcher.fetch_rss_feeds()
         
-        # Combine articles
-        all_articles = articles + rss_articles
+        # Use RSS articles only
+        all_articles = rss_articles
         
         if all_articles:
             print(f"Found {len(articles)} NewsAPI articles and {len(rss_articles)} RSS articles.")

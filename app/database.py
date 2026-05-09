@@ -121,18 +121,20 @@ class DatabaseHandler:
         if self.collection is not None and self.is_connected():
             try:
                 operations = []
-                seen_urls = set()
+                seen_keys = set()
                 for article in articles:
                     url = article.get("url", "")
-                    if url and url not in seen_urls:
+                    pub_date = article.get("publishedAt", "")[:10]
+                    unique_key = f"{url}|{pub_date}"
+                    if url and unique_key not in seen_keys:
                         operations.append(
                             UpdateOne(
-                                {"url": url},
+                                {"url": url, "publishedAt": {"$regex": f"^{pub_date}"}},
                                 {"$set": article},
                                 upsert=True
                             )
                         )
-                        seen_urls.add(url)
+                        seen_keys.add(unique_key)
 
                 if operations:
                     result = self.collection.bulk_write(operations, ordered=False)
@@ -213,10 +215,26 @@ class DatabaseHandler:
         with _json_lock:
             try:
                 articles = self._read_json()
-                if not any(a.get("url") == article.get("url") for a in articles):
+                url = article.get("url", "")
+                pub_date = article.get("publishedAt", "")[:10]
+                
+                should_add = True
+                for a in articles:
+                    if a.get("url") == url:
+                        a_pub = a.get("publishedAt", "")[:10]
+                        if a_pub == pub_date:
+                            should_add = False
+                            break
+                        else:
+                            a.update(article)
+                            should_add = False
+                            break
+                
+                if should_add:
                     articles.append(article)
-                    with open(self.json_file, 'w', encoding='utf-8') as f:
-                        json.dump(articles, f, indent=2, default=str)
+                
+                with open(self.json_file, 'w', encoding='utf-8') as f:
+                    json.dump(articles, f, indent=2, default=str)
             except Exception as e:
                 logger.error(f"JSON write error: {e}")
 
@@ -299,8 +317,36 @@ class DatabaseHandler:
         Get statistics about the news data.
         :return: Dictionary with counts and distribution
         """
-        articles = self.get_all_articles(limit=1000)
-
+        if self.collection is not None and self.is_connected():
+            try:
+                total = self.collection.count_documents({})
+                category_pipeline = [
+                    {"$group": {"_id": "$category", "count": {"$sum": 1}}}
+                ]
+                sentiment_pipeline = [
+                    {"$group": {"_id": "$sentiment.score", "count": {"$sum": 1}}}
+                ]
+                
+                category_counts = {}
+                for doc in self.collection.aggregate(category_pipeline):
+                    category_counts[doc["_id"] or "general"] = doc["count"]
+                
+                sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0}
+                for doc in self.collection.aggregate(sentiment_pipeline):
+                    score = doc["_id"] or "neutral"
+                    if score in sentiment_counts:
+                        sentiment_counts[score] = doc["count"]
+                
+                return {
+                    "total_articles": total,
+                    "categories": category_counts,
+                    "sentiment": sentiment_counts,
+                    "storage_mode": "mongodb"
+                }
+            except Exception as e:
+                logger.error(f"MongoDB stats error: {e}")
+        
+        articles = self.get_all_articles(limit=5000)
         total = len(articles)
         category_counts = {}
         sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0}

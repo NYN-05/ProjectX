@@ -19,9 +19,10 @@ class NewsFetcher:
         self.api_key = api_key or settings.NEWS_API_KEY
         self.base_url = settings.NEWS_API_URL
         self.session = requests.Session()
-        self.session.headers.update({
-            "X-Api-Key": self.api_key
-        })
+        if self.api_key and self.api_key != "demo_key":
+            self.session.headers.update({
+                "X-Api-Key": self.api_key
+            })
 
     def _fetch_single_rss(self, source_name: str, url: str) -> tuple:
         """Fetch a single RSS feed, returns (source_name, list of articles, error)."""
