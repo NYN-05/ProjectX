@@ -220,4 +220,7 @@ class EventModeler:
             if severity in clusters["by_severity"]:
                 clusters["by_severity"][severity].append(event)
         
-        return event_modeler = EventModeler()
+        return clusters
+
+
+event_modeler = EventModeler()
