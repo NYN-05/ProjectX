@@ -3,6 +3,8 @@ from datetime import datetime
 from textblob import TextBlob
 from app.config import settings
 from app.services.geolocation_service import geolocation_processor as GeoProcessor
+from app.services.entity_extractor import entity_extractor
+from app.services.event_modeler import EventModeler
 
 
 class TextCleaner:
@@ -186,3 +188,31 @@ class GeolocationProcessor:
     def add_geolocation(article: dict) -> dict:
         """Add geolocation metadata to an article."""
         return GeoProcessor.process_article(article)
+
+
+class IntelligenceProcessor:
+    @staticmethod
+    def extract_entities(article: dict) -> dict:
+        """Extract structured entities from article."""
+        return entity_extractor.extract_all(article)
+    
+    @staticmethod
+    def model_event(article: dict) -> dict:
+        """Convert article to intelligence event."""
+        return EventModeler().model_event(article)
+    
+    @staticmethod
+    def add_intelligence(article: dict) -> dict:
+        """Add full intelligence metadata to article."""
+        entities = IntelligenceProcessor.extract_entities(article)
+        event = IntelligenceProcessor.model_event(article)
+        
+        article["entities"] = entities
+        article["event_id"] = event.get("event_id")
+        article["event_type"] = event.get("event_type")
+        article["event_sector"] = event.get("sector")
+        article["event_impact"] = event.get("impact")
+        article["event_severity"] = event.get("severity")
+        article["event_actors"] = event.get("actors")
+        
+        return article

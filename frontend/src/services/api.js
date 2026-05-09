@@ -138,6 +138,49 @@ export const newsAPI = {
      return api.get(`/news/map?${params.toString()}`);
    },
 
+   /**
+    * Build intelligence graph from recent articles
+    * @param {number} limit - Number of articles to process
+    */
+   buildGraph: (limit = 100) => {
+     return api.get(`/graph/build?limit=${limit}`);
+   },
+
+   /**
+    * Get graph data with filtering
+    * @param {Object} params - Filter parameters
+    */
+   getGraph: (params = {}) => {
+     const query = new URLSearchParams(params).toString();
+     return api.get(`/graph${query ? `?${query}` : ''}`);
+   },
+
+   /**
+    * Get detailed information about a specific event
+    * @param {string} eventId - Event ID
+    */
+   getEventDetail: (eventId) => {
+     return api.get(`/graph/events/${encodeURIComponent(eventId)}`);
+   },
+
+   /**
+    * Get most connected events in the graph
+    * @param {number} limit - Number of events to return
+    */
+   getCentralEvents: (limit = 10) => {
+     return api.get(`/graph/central?limit=${limit}`);
+   },
+
+   /**
+    * Get network of events related to an entity
+    * @param {string} entityType - Type of entity (country, industry)
+    * @param {string} entityName - Name of the entity
+    * @param {number} limit - Max events to return
+    */
+   getEntityNetwork: (entityType, entityName, limit = 50) => {
+     return api.get(`/graph/entity/${entityType}/${encodeURIComponent(entityName)}?limit=${limit}`);
+   },
+
   /**
    * Batch fetch multiple pages
    * @param {Object} params - Fetch parameters

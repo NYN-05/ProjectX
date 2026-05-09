@@ -10,7 +10,9 @@ import {
 } from 'recharts';
 import { newsAPI } from './services/api';
 import { useWorldNewsMap } from './hooks/useWorldNewsMap';
+import { useIntelligenceGraph } from './hooks/useIntelligenceGraph';
 import { WorldNewsMap, CountryTooltip, MapLegend } from './components/map';
+import { RelationshipGraph, IntelligencePanel } from './components/graph';
 
 const SENTIMENT_COLORS = {
   positive: '#7DC97D',
@@ -50,6 +52,15 @@ function App() {
     setSelectedCountry,
     fetchMapData
   } = useWorldNewsMap();
+  const {
+    graphData,
+    loading: graphLoading,
+    error: graphError,
+    selectedEvent,
+    setSelectedEvent,
+    buildGraph,
+    selectEvent
+  } = useIntelligenceGraph();
   const [stats, setStats] = useState({
     totalArticles: 0,
     categories: {},
@@ -197,13 +208,41 @@ function App() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setActiveView(activeView === 'feed' ? 'map' : 'feed')}
-                className="btn-ghost flex items-center gap-2"
-              >
-                <Map size={13} />
-                {activeView === 'feed' ? 'Map' : 'Feed'}
-              </button>
+              <div className="flex" style={{ border: '1px solid var(--border)' }}>
+                <button 
+                  onClick={() => setActiveView('feed')}
+                  className="btn-ghost"
+                  style={{ 
+                    padding: '8px 12px', 
+                    background: activeView === 'feed' ? 'var(--accent)' : 'transparent',
+                    color: activeView === 'feed' ? 'var(--bg-base)' : 'var(--text-secondary)'
+                  }}
+                >
+                  Feed
+                </button>
+                <button 
+                  onClick={() => setActiveView('map')}
+                  className="btn-ghost"
+                  style={{ 
+                    padding: '8px 12px', 
+                    background: activeView === 'map' ? 'var(--accent)' : 'transparent',
+                    color: activeView === 'map' ? 'var(--bg-base)' : 'var(--text-secondary)'
+                  }}
+                >
+                  Map
+                </button>
+                <button 
+                  onClick={() => setActiveView('graph')}
+                  className="btn-ghost"
+                  style={{ 
+                    padding: '8px 12px', 
+                    background: activeView === 'graph' ? 'var(--accent)' : 'transparent',
+                    color: activeView === 'graph' ? 'var(--bg-base)' : 'var(--text-secondary)'
+                  }}
+                >
+                  Graph
+                </button>
+              </div>
               <button onClick={handleRefresh} disabled={loading} className="btn-ghost flex items-center gap-2">
                 <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
                 Refresh
@@ -275,6 +314,39 @@ function App() {
               <CountryTooltip 
                 country={mapData.countries?.find(c => c.country_code === selectedCountry)}
                 onClose={() => setSelectedCountry(null)}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Graph View */}
+      {activeView === 'graph' && (
+        <div className="max-w-7xl mx-auto px-6 pb-6">
+          <div className="card" style={{ height: 550, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'absolute', top: 16, left: 16, zIndex: 10 }}>
+              <h2 style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 18, color: 'var(--text-primary)', letterSpacing: '0.15em' }}>
+                INTELLIGENCE RELATIONSHIP GRAPH
+              </h2>
+              <p style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace', marginTop: 4 }}>
+                Event connections and causal relationships
+              </p>
+            </div>
+            <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
+              <button onClick={buildGraph} className="btn-ghost" style={{ padding: '6px 12px', fontSize: 10 }}>
+                Rebuild Graph
+              </button>
+            </div>
+            <RelationshipGraph 
+              graphData={graphData}
+              onNodeSelect={selectEvent}
+              loading={graphLoading}
+            />
+            {selectedEvent && (
+              <IntelligencePanel 
+                event={selectedEvent.event}
+                relatedEvents={selectedEvent.related_events}
+                onClose={() => setSelectedEvent(null)}
               />
             )}
           </div>

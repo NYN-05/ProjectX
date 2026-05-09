@@ -9,6 +9,10 @@ from app.fetcher import NewsFetcher
 from app.utils import process_articles_batch
 from app.config import settings
 from app.limiter import limiter
+from app.services.event_modeler import EventModeler
+from app.services.embedding_service import embedding_service
+from app.services.relationship_detector import relationship_detector, RelationshipDetector
+from app.services.graph_service import graph_service
 
 logger = logging.getLogger(__name__)
 
@@ -383,3 +387,178 @@ async def get_news_map(request: Request,
     except Exception as e:
         logger.error(f"Map data error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch map data: {str(e)}")
+
+
+@router.get("/graph/build")
+@limiter.limit("5/minute")
+async def build_graph(request: Request,
+    limit: int = Query(default=100, ge=10, le=500, description="Number of articles")
+):
+    """
+    Build intelligence graph from recent articles.
+    Extracts entities, models events, detects relationships, and builds graph.
+    """
+    try:
+        articles = db.get_all_articles(limit=limit)
+        
+        graph_service.clear()
+        
+        event_modeler = EventModeler()
+        events = event_modeler.model_batch(articles)
+        
+        graph_service.add_events_batch(events)
+        
+        embeddings = embedding_service.create_event_embeddings(events)
+        
+        rel_detector = RelationshipDetector(similarity_threshold=0.2)
+        relationships = rel_detector.detect_all_relationships(
+            events,
+            [e.get("embedding") for e in embeddings if e.get("embedding")]
+        )
+        
+        filtered_rels = rel_detector.filter_relationships(relationships, min_confidence=0.2)
+        graph_service.add_relationships_batch(filtered_rels)
+        
+        graph_data = graph_service.get_graph_data()
+        
+        return {
+            "success": True,
+            "message": f"Built graph with {len(events)} events and {len(filtered_rels)} relationships",
+            "data": graph_data
+        }
+        
+    except Exception as e:
+        logger.error(f"Graph build error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to build graph: {str(e)}")
+
+
+@router.get("/graph")
+@limiter.limit("30/minute")
+async def get_graph(request: Request,
+    limit: int = Query(default=100, ge=10, le=500),
+    event_type: Optional[str] = Query(default=None),
+    sector: Optional[str] = Query(default=None),
+    country: Optional[str] = Query(default=None),
+    impact: Optional[str] = Query(default=None)
+):
+    """
+    Get intelligence graph data with filtering.
+    Returns nodes (events) and edges (relationships) for visualization.
+    """
+    try:
+        graph_data = graph_service.get_graph_data(limit=limit)
+        
+        nodes = graph_data.get("nodes", [])
+        
+        if event_type:
+            nodes = [n for n in nodes if n.get("event_type") == event_type]
+        if sector:
+            nodes = [n for n in nodes if n.get("sector") == sector]
+        if country:
+            nodes = [n for n in nodes if country in n.get("countries", [])]
+        if impact:
+            nodes = [n for n in nodes if n.get("impact") == impact]
+        
+        node_ids = set(n.get("id") for n in nodes)
+        edges = [e for e in graph_data.get("edges", []) if e.get("source") in node_ids and e.get("target") in node_ids]
+        
+        impact_analysis = graph_service.get_impact_analysis()
+        
+        return {
+            "success": True,
+            "data": {
+                "nodes": nodes,
+                "edges": edges,
+                "stats": {
+                    **graph_data.get("stats", {}),
+                    "filtered_nodes": len(nodes),
+                    "filtered_edges": len(edges)
+                },
+                "impact_analysis": impact_analysis
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Graph fetch error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch graph: {str(e)}")
+
+
+@router.get("/graph/events/{event_id}")
+async def get_event_detail(event_id: str):
+    """
+    Get detailed information about a specific event.
+    """
+    try:
+        event = graph_service.get_event(event_id)
+        
+        if not event:
+            raise HTTPException(status_code=404, detail=f"Event not found: {event_id}")
+        
+        neighbors = graph_service.get_neighbors(event_id)
+        
+        return {
+            "success": True,
+            "data": {
+                "event": event,
+                "related_events": neighbors
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Event detail error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch event: {str(e)}")
+
+
+@router.get("/graph/central")
+async def get_central_events(
+    limit: int = Query(default=10, ge=1, le=50)
+):
+    """
+    Get most connected events in the graph.
+    """
+    try:
+        central = graph_service.get_central_events(limit=limit)
+        
+        return {
+            "success": True,
+            "data": {
+                "events": central,
+                "total": len(central)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Central events error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch central events: {str(e)}")
+
+
+@router.get("/graph/entity/{entity_type}/{entity_name}")
+async def get_entity_network(
+    entity_type: str,
+    entity_name: str,
+    limit: int = Query(default=50, ge=1, le=100)
+):
+    """
+    Get network of events related to a specific entity.
+    """
+    try:
+        network = graph_service.get_entity_network(entity_type, entity_name)
+        
+        events = network.get("events", [])[:limit]
+        
+        return {
+            "success": True,
+            "data": {
+                "entity_type": entity_type,
+                "entity_name": entity_name,
+                "events": events,
+                "event_count": len(events),
+                "relationships": network.get("relationships", [])[:limit]
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Entity network error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch entity network: {str(e)}")
